@@ -6,7 +6,24 @@ public actor SteamDownloader {
 
     public static let wallpaperEngineAppID = "431960"
 
-    private let steamClientExecutable = "/Applications/Steam.app/Contents/MacOS/steam_osx"
+    public var steamClientExecutableURL: URL? {
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") {
+            let exec = appURL.appendingPathComponent("Contents/MacOS/steam_osx")
+            if FileManager.default.isExecutableFile(atPath: exec.path) {
+                return exec
+            }
+        }
+        let candidates = [
+            "/Applications/Steam.app/Contents/MacOS/steam_osx",
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/Steam.app/Contents/MacOS/steam_osx").path
+        ]
+        for c in candidates {
+            if FileManager.default.isExecutableFile(atPath: c) {
+                return URL(fileURLWithPath: c)
+            }
+        }
+        return nil
+    }
 
     public nonisolated var defaultWorkshopContentDirectory: URL {
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -19,7 +36,7 @@ public actor SteamDownloader {
 
     /// Checks whether the macOS Steam client executable is installed
     public func isSteamInstalled() -> Bool {
-        return FileManager.default.isExecutableFile(atPath: steamClientExecutable)
+        return steamClientExecutableURL != nil
     }
 
     /// Checks whether Steam client is currently running
@@ -33,16 +50,27 @@ public actor SteamDownloader {
 
     /// Triggers download of the specified Wallpaper Engine workshop item via local Steam client
     public func triggerDownload(workshopId: String) throws {
-        guard isSteamInstalled() else {
+        guard let execURL = steamClientExecutableURL else {
             throw NSError(
                 domain: "SteamDownloader",
                 code: 404,
-                userInfo: [NSLocalizedDescriptionKey: "未找到 Steam 客户端，请确保已安装 /Applications/Steam.app"]
+                userInfo: [NSLocalizedDescriptionKey: "未找到 Steam 客户端，请确保已安装 Steam"]
+            )
+        }
+
+        guard isSteamRunning() else {
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") {
+                NSWorkspace.shared.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+            }
+            throw NSError(
+                domain: "SteamDownloader",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "下载壁纸需要打开 Steam 客户端。已为您尝试唤起 Steam，请在客户端启动后重试。"]
             )
         }
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: steamClientExecutable)
+        process.executableURL = execURL
         process.arguments = [
             "+workshop_download_item",
             Self.wallpaperEngineAppID,
@@ -92,7 +120,7 @@ public actor SteamDownloader {
         throw NSError(
             domain: "SteamDownloader",
             code: 408,
-            userInfo: [NSLocalizedDescriptionKey: "下载超时（\(Int(timeoutSeconds))秒）。请确保 Steam 已开启且当前账号拥有 Wallpaper Engine。"]
+            userInfo: [NSLocalizedDescriptionKey: "下载超时（\(Int(timeoutSeconds))秒）。请确保 Steam 客户端保持开启并在后台运行。"]
         )
     }
 

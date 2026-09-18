@@ -14,7 +14,7 @@ struct DownloadBarView: View {
                         .foregroundColor(.secondary)
                         .font(.system(size: 13))
 
-                    TextField("粘贴 Steam 创意工坊链接或输入壁纸 ID...", text: $inputURL)
+                    TextField("粘贴 Steam 创意工坊链接或输入壁纸 ID（下载时需打开 Steam 客户端）...", text: $inputURL)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13, design: .default))
                         .onSubmit {
