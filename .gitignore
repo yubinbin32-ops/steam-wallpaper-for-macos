@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+.contextos/
+Wallpaper.app/
+extracted_test/
+*.swp
+*~
+*.xcuserstate
+.Trashes
