@@ -2,6 +2,8 @@
 
 一个专为 macOS 打造的高性能、轻量级 Steam Wallpaper Engine 原生伴侣应用。纯 Swift 6 (SwiftUI + AppKit + SpriteKit + Metal + WebKit) 原生开发，旨在带来极低能耗、硬件加速、丝滑流畅的动态壁纸桌面体验。
 
+![桌面运行效果与原生画廊](docs/images/desktop_preview.jpg)
+
 ---
 
 ## ⚠️ 使用前必读（前提条件）
@@ -64,7 +66,9 @@
    - 确保 Mac 上的 Steam 已登录并且正在后台运行。
 2. **在创意工坊复制壁纸链接**：
    - 在 Steam 社区创意工坊的 Wallpaper Engine 分区中找到喜欢的壁纸；
-   - 右键选择“复制网页链接”（例如：`https://steamcommunity.com/sharedfiles/filedetails/?id=3802068825`）或直接复制纯数字 ID。
+   - 右键选择“复制网页链接”（例如：`https://steamcommunity.com/sharedfiles/filedetails/?id=2945179021`）或直接复制纯数字 ID。
+
+   ![复制 Steam 创意工坊链接示例](docs/images/workshop_link_demo.png)
 3. **一键下载并应用**：
    - 打开 **Steam Wallpaper for Mac**；
    - 在主界面顶部的下载栏粘贴链接，点击 **“下载并提取”**；
