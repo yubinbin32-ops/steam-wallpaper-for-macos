@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import QuartzCore
 import SpriteKit
+import WebKit
 
 final class AspectFillView: NSView {
     var image: NSImage? {
@@ -68,6 +69,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
 
     private var imageViews: [AspectFillView] = []
     private var skViews: [SKView] = []
+    private var webViews: [WKWebView] = []
 
     public override init() {
         super.init()
@@ -86,6 +88,11 @@ public final class DesktopEngine: NSObject, ObservableObject {
             skView.presentScene(nil)
         }
         skViews.removeAll()
+        for webView in webViews {
+            webView.stopLoading()
+            webView.removeFromSuperview()
+        }
+        webViews.removeAll()
 
         for screen in NSScreen.screens {
             let window = createDesktopWindow(for: screen)
@@ -137,6 +144,17 @@ public final class DesktopEngine: NSObject, ObservableObject {
         contentView.layer?.addSublayer(playerLayer)
         playerLayers.append(playerLayer)
 
+        // 4. WKWebView for Web / HTML5 Wallpapers
+        let webConfig = WKWebViewConfiguration()
+        webConfig.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+        webConfig.mediaTypesRequiringUserActionForPlayback = []
+        let webView = WKWebView(frame: contentView.bounds, configuration: webConfig)
+        webView.autoresizingMask = [.width, .height]
+        webView.setValue(false, forKey: "drawsBackground")
+        webView.isHidden = true
+        contentView.addSubview(webView)
+        webViews.append(webView)
+
         window.contentView = contentView
         window.orderFront(nil)
         return window
@@ -158,7 +176,33 @@ public final class DesktopEngine: NSObject, ObservableObject {
         audioPlayer = nil
         audioLooper = nil
 
-        if wallpaper.type == .scene {
+        for webView in webViews {
+            webView.stopLoading()
+            webView.isHidden = true
+        }
+
+        if wallpaper.type == .web, let htmlURL = wallpaper.htmlURL {
+            // Interactive HTML5 / WebGL / Canvas Web Wallpaper
+            for layer in playerLayers {
+                layer.player = nil
+                layer.isHidden = true
+            }
+            for skView in skViews {
+                skView.isPaused = true
+                skView.isHidden = true
+                skView.presentScene(nil)
+            }
+            for imgView in imageViews {
+                imgView.isHidden = true
+            }
+            for webView in webViews {
+                webView.isHidden = false
+                webView.loadFileURL(htmlURL, allowingReadAccessTo: wallpaper.localDirectoryURL)
+            }
+            startAudioPlayback(for: wallpaper)
+            self.isPlaying = true
+
+        } else if wallpaper.type == .scene {
             // Real-time SpriteKit Scene Rendering
             for layer in playerLayers {
                 layer.player = nil
@@ -264,6 +308,9 @@ public final class DesktopEngine: NSObject, ObservableObject {
         for skView in skViews {
             skView.isPaused = true
         }
+        for webView in webViews {
+            webView.evaluateJavaScript("if (window.onPause) window.onPause();", completionHandler: nil)
+        }
         isPlaying = false
     }
 
@@ -272,6 +319,9 @@ public final class DesktopEngine: NSObject, ObservableObject {
         audioPlayer?.play()
         for skView in skViews {
             skView.isPaused = false
+        }
+        for webView in webViews {
+            webView.evaluateJavaScript("if (window.onResume) window.onResume();", completionHandler: nil)
         }
         isPlaying = true
     }

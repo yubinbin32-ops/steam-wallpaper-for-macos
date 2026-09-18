@@ -86,3 +86,9 @@ echo "🔏 Ad-hoc code signing..."
 codesign --force --deep --sign - "$APP_NAME"
 
 echo "✅ $APP_NAME successfully packaged!"
+
+if [ "$1" == "--zip" ]; then
+    echo "🗜️ Creating SteamWallpaper-macOS.zip..."
+    ditto -c -k --keepParent "$APP_NAME" "SteamWallpaper-macOS.zip"
+    echo "✅ SteamWallpaper-macOS.zip ready!"
+fi

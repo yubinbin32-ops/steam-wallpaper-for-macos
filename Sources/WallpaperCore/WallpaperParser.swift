@@ -112,6 +112,23 @@ public struct WallpaperParser: Sendable {
             }
         }
 
+        // Web File
+        var htmlURL: URL?
+        if type == .web {
+            if let fileName = rawProject.file {
+                let candidate = directoryURL.appendingPathComponent(fileName)
+                if FileManager.default.fileExists(atPath: candidate.path) {
+                    htmlURL = candidate
+                }
+            }
+            if htmlURL == nil {
+                let indexCand = directoryURL.appendingPathComponent("index.html")
+                if FileManager.default.fileExists(atPath: indexCand.path) {
+                    htmlURL = indexCand
+                }
+            }
+        }
+
         // Calculate size
         let totalSize = directorySize(url: directoryURL)
 
@@ -122,6 +139,7 @@ public struct WallpaperParser: Sendable {
             videoURL: videoURL,
             previewURL: previewURL,
             audioURL: audioURL,
+            htmlURL: htmlURL,
             localDirectoryURL: directoryURL,
             fileSize: totalSize,
             tags: rawProject.tags ?? []

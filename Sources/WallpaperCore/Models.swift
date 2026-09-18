@@ -27,6 +27,7 @@ public struct WallpaperItem: Identifiable, Codable, Sendable, Equatable {
     public var videoURL: URL?
     public var previewURL: URL?
     public var audioURL: URL?
+    public var htmlURL: URL?
     public var localDirectoryURL: URL
     public var fileSize: Int64
     public var tags: [String]
@@ -39,6 +40,7 @@ public struct WallpaperItem: Identifiable, Codable, Sendable, Equatable {
         videoURL: URL? = nil,
         previewURL: URL? = nil,
         audioURL: URL? = nil,
+        htmlURL: URL? = nil,
         localDirectoryURL: URL,
         fileSize: Int64 = 0,
         tags: [String] = [],
@@ -50,6 +52,7 @@ public struct WallpaperItem: Identifiable, Codable, Sendable, Equatable {
         self.videoURL = videoURL
         self.previewURL = previewURL
         self.audioURL = audioURL
+        self.htmlURL = htmlURL
         self.localDirectoryURL = localDirectoryURL
         self.fileSize = fileSize
         self.tags = tags

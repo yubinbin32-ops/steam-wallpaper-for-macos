@@ -7,3 +7,5 @@ extracted_test/
 *~
 *.xcuserstate
 .Trashes
+*.zip
+*.sha256

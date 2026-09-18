@@ -42,6 +42,33 @@ final class WallpaperTests: XCTestCase {
         XCTAssertNotNil(item.previewURL)
     }
 
+    func testParseWebWallpaperDirectory() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let projectJSON = """
+        {
+            "file": "index.html",
+            "title": "Interactive Matrix Rain",
+            "type": "web",
+            "workshopid": "9999999999",
+            "tags": ["Cyberpunk", "Abstract"]
+        }
+        """
+        try projectJSON.write(to: tempDir.appendingPathComponent("project.json"), atomically: true, encoding: .utf8)
+        try "<html><body>Hello</body></html>".write(to: tempDir.appendingPathComponent("index.html"), atomically: true, encoding: .utf8)
+
+        let parser = WallpaperParser()
+        let item = try parser.parseDirectory(at: tempDir)
+
+        XCTAssertEqual(item.id, "9999999999")
+        XCTAssertEqual(item.type, .web)
+        XCTAssertEqual(item.title, "Interactive Matrix Rain")
+        XCTAssertNotNil(item.htmlURL)
+        XCTAssertEqual(item.htmlURL?.lastPathComponent, "index.html")
+    }
+
     @MainActor
     func testSceneRendererBuildSceneYachiyo() throws {
         let workshopPath = "/Users/a1-6/Library/Application Support/Steam/steamapps/workshop/content/431960/3659880761"
@@ -86,6 +113,7 @@ final class WallpaperTests: XCTestCase {
         print("高槻泉 Scene verified: \(sprites.count) sprite(s), \(emitters.count) particle emitter(s)")
     }
 
+    @MainActor
     private func allDescendants(of node: SKNode) -> [SKNode] {
         var results = node.children
         for child in node.children {

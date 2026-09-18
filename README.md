@@ -1,6 +1,6 @@
 # Steam Wallpaper for Mac 🖥️✨
 
-一个专为 macOS 打造的高性能、轻量级 Steam Wallpaper Engine 原生伴侣应用。纯 Swift 6 (SwiftUI + AppKit + SpriteKit + Metal) 原生开发，旨在带来极低能耗、硬件加速、丝滑流畅的动态壁纸桌面体验。
+一个专为 macOS 打造的高性能、轻量级 Steam Wallpaper Engine 原生伴侣应用。纯 Swift 6 (SwiftUI + AppKit + SpriteKit + Metal + WebKit) 原生开发，旨在带来极低能耗、硬件加速、丝滑流畅的动态壁纸桌面体验。
 
 ---
 
@@ -24,8 +24,21 @@
 | 壁纸类型 | 支持状态 | 说明 |
 | :--- | :---: | :--- |
 | **Video 视频壁纸** | **完美支持** | 采用 macOS 原生 `AVFoundation` + 硬件解码器，4K 60fps 极其流畅，CPU 占用率低于 0.5%，完全不发热。 |
+| **Web 网页壁纸** | **完美支持** | 基于 macOS 原生 `WebKit` (`WKWebView`)，完整支持 HTML5、Canvas、WebGL 与 CSS3 动画，支持系统休眠与全屏暂停。 |
 | **静态壁纸 (Static)** | **完美支持** | 提取超清原图，智能 Aspect Fill 居中裁切自适应屏幕比例，绝不拉伸变形。 |
-| **Scene 场景壁纸** | **部分支持** | 支持基础 2D 图层合成、SpriteKit 粒子特效（星空、流星、烟雨等）与原声音乐播放。由于部分复杂场景使用了 Windows 专用的 Puppet 2D 骨骼网格与 DirectX/HLSL 着色器，部分复杂人物场景可能存在对齐错位或着色差异，建议优先选用 Video 视频壁纸或经典粒子场景。 |
+| **Scene 场景壁纸** | **部分支持** | 支持基础 2D 图层合成、SpriteKit 粒子特效（星空、流星、烟雨等）与原声音乐播放。由于部分复杂场景使用了 Windows 专用的 Puppet 2D 骨骼网格与 DirectX/HLSL 着色器，部分复杂人物场景可能存在对齐错位或着色差异，建议优先选用 Video 视频壁纸、Web 网页壁纸或经典粒子场景。 |
+
+---
+
+## 📥 下载安装（推荐）
+
+通过 GitHub Actions 自动构建，每当发布新版本时会自动编译并打包发布至 Releases：
+
+1. 前往 GitHub 仓库的 **Releases** 页面；
+2. 下载最新的 `SteamWallpaper-macOS.zip` 压缩包；
+3. 双击解压后将 `Wallpaper.app` 拖入 `/Applications`（访达应用程序）文件夹；
+4. 双击打开即可使用！
+   *(注：若首次打开提示“无法打开，因为无法验证开发者”，请前往系统设置 -> 隐私与安全性 -> 点击“仍要打开”即可。)*
 
 ---
 
@@ -34,7 +47,7 @@
 - **🚀 一键工坊直连下载**：
   - 复制创意工坊链接或 ID 粘贴即可，系统自动调度本地 Steam 官方高速 CDN 下载，无需第三方代理或登录 Cookie。
 - **⚡ 极致轻量与硬件加速**：
-  - 拒绝臃肿的 Electron 与 Web 浏览器内核；
+  - 拒绝臃肿的 Electron 与第三方 Chromium 内核；
   - 基于 macOS 原生渲染管线，日常运行内存仅 50~80MB，笔记本待机电池续航不受影响。
 - **📐 智能比例自适应**：
   - 严格保持画面原始高宽比（Aspect Fill），支持超宽屏、带鱼屏与各类 MacBook Retina 视网膜屏幕，画面居中裁剪，绝不拉伸挤压。
@@ -69,7 +82,7 @@
 - macOS 13.0 (Ventura) 及以上版本
 - Xcode 15+ 或 Swift 6.0+ 工具链
 
-### 快速构建与运行
+### 本地构建与打包
 
 ```bash
 # 1. 运行快速启动脚本
@@ -78,11 +91,15 @@
 # 2. 或者使用 Swift Package Manager 编译 Release 版本
 swift build -c release
 
-# 3. 打包并生成签名的 Wallpaper.app 应用程序包
-./bundle.sh
+# 3. 打包生成 Wallpaper.app 应用程序包（加 --zip 可同时生成安装 zip）
+./bundle.sh --zip
 ```
 
-打包完成后，`Wallpaper.app` 即可直接双击运行，或拖拽至 `/Applications` 应用程序文件夹使用。
+### 自动化 Release 发布（GitHub Actions）
+- 项目配置了自动化 CI/CD 流水线 ([.github/workflows/release.yml](.github/workflows/release.yml))。
+- **自动触发**：推送版本标签（例如 `git tag v1.0.0 && git push origin v1.0.0`）；
+- **手动触发**：在 GitHub 仓库页面的 Actions -> "Release Steam Wallpaper for Mac" -> 点击 "Run workflow"；
+- 工作流会在 macOS 虚拟环境中自动完成代码检出、单元测试、打包签名，并自动将生成的 `SteamWallpaper-macOS.zip` 挂载至 Releases 供用户下载安装。
 
 ---
 
@@ -96,7 +113,7 @@ Sources/
 │   ├── SteamDownloader.swift      # Steam 客户端指令桥接与下载监控
 │   ├── WallpaperParser.swift      # project.json 与 scene.pkg 二进制解包引擎
 │   ├── SceneRenderer.swift        # SpriteKit + Metal 场景与粒子特效渲染器
-│   ├── DesktopEngine.swift        # NSWindow 桌面置底层级与多媒体播放控制
+│   ├── DesktopEngine.swift        # NSWindow 桌面置底层级、AVPlayer、SpriteKit 与 WebKit 控制
 │   ├── PowerManager.swift         # 全屏应用监听与自适应低能耗调度
 │   └── WallpaperStore.swift       # 响应式状态管理与本地壁纸库同步
 └── WallpaperApp/                  # SwiftUI 原生前端应用
