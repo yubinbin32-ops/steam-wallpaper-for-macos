@@ -51,12 +51,24 @@ public final class DesktopEngine: NSObject, ObservableObject {
         didSet {
             player?.isMuted = isMuted
             audioPlayer?.isMuted = isMuted
+            for webView in webViews {
+                webView.evaluateJavaScript("""
+                var audios = document.querySelectorAll('audio, video');
+                audios.forEach(function(a) { a.muted = \(isMuted); });
+                """, completionHandler: nil)
+            }
         }
     }
     @Published public var volume: Float = 0.5 {
         didSet {
             player?.volume = volume
             audioPlayer?.volume = volume
+            for webView in webViews {
+                webView.evaluateJavaScript("""
+                var audios = document.querySelectorAll('audio, video');
+                audios.forEach(function(a) { a.volume = \(volume); });
+                """, completionHandler: nil)
+            }
         }
     }
 
@@ -71,6 +83,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
     private var skViews: [SKView] = []
     private var metalViews: [MetalSceneView] = []
     private var webViews: [WKWebView] = []
+    private var mouseMonitor: Any?
 
     public override init() {
         super.init()
@@ -157,17 +170,6 @@ public final class DesktopEngine: NSObject, ObservableObject {
         contentView.layer?.addSublayer(playerLayer)
         playerLayers.append(playerLayer)
 
-        // 5. WKWebView for Web / HTML5 Wallpapers
-        let webConfig = WKWebViewConfiguration()
-        webConfig.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
-        webConfig.mediaTypesRequiringUserActionForPlayback = []
-        let webView = WKWebView(frame: contentView.bounds, configuration: webConfig)
-        webView.autoresizingMask = [.width, .height]
-        webView.setValue(false, forKey: "drawsBackground")
-        webView.isHidden = true
-        contentView.addSubview(webView)
-        webViews.append(webView)
-
         window.contentView = contentView
         window.orderFront(nil)
         return window
@@ -189,13 +191,8 @@ public final class DesktopEngine: NSObject, ObservableObject {
         audioPlayer = nil
         audioLooper = nil
 
-        for webView in webViews {
-            webView.stopLoading()
-            webView.isHidden = true
-        }
-
         if wallpaper.type == .web, let htmlURL = wallpaper.htmlURL {
-            // Interactive HTML5 / WebGL / Canvas Web Wallpaper
+            // Interactive HTML5 / WebGL / Canvas Web Wallpaper (1:1 Wallpaper Engine Runtime)
             for layer in playerLayers {
                 layer.player = nil
                 layer.isHidden = true
@@ -212,14 +209,70 @@ public final class DesktopEngine: NSObject, ObservableObject {
             for imgView in imageViews {
                 imgView.isHidden = true
             }
+
+            // Clean up old web views
             for webView in webViews {
-                webView.isHidden = false
+                webView.stopLoading()
+                webView.removeFromSuperview()
+            }
+            webViews.removeAll()
+
+            // Initialize fresh WKWebViews configured with 1:1 Wallpaper Engine JavaScript Bridge
+            let config = WebWallpaperBridge.shared.createConfiguration(for: wallpaper.localDirectoryURL)
+            for window in windows {
+                guard let contentView = window.contentView else { continue }
+                let webView = WKWebView(frame: contentView.bounds, configuration: config)
+                webView.navigationDelegate = WebWallpaperBridge.shared
+                webView.autoresizingMask = [.width, .height]
+                webView.setValue(false, forKey: "drawsBackground")
+                contentView.addSubview(webView)
+                webViews.append(webView)
                 webView.loadFileURL(htmlURL, allowingReadAccessTo: wallpaper.localDirectoryURL)
             }
-            startAudioPlayback(for: wallpaper)
+
+            // Setup global mouse cursor tracking for Web Wallpaper HUD parallax & 3D tilt
+            if mouseMonitor == nil {
+                mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
+                    Task { @MainActor [weak self] in
+                        guard let self = self, self.currentWallpaper?.type == .web else { return }
+                        for (idx, wView) in self.webViews.enumerated() {
+                            guard idx < self.windows.count else { continue }
+                            let win = self.windows[idx]
+                            let screenH = win.frame.height
+                            let mouseLoc = event.locationInWindow
+                            let x = Int(mouseLoc.x)
+                            let y = Int(screenH - mouseLoc.y)
+                            let js = """
+                            window.dispatchEvent(new MouseEvent('mousemove', {
+                                clientX: \(x),
+                                clientY: \(y),
+                                screenX: \(x),
+                                screenY: \(y),
+                                bubbles: true
+                            }));
+                            """
+                            wView.evaluateJavaScript(js, completionHandler: nil)
+                        }
+                    }
+                }
+            }
+
             self.isPlaying = true
 
-        } else if wallpaper.type == .scene {
+        } else {
+            // Remove web mouse tracking when playing scene or video
+            if let m = mouseMonitor {
+                NSEvent.removeMonitor(m)
+                mouseMonitor = nil
+            }
+            for webView in webViews {
+                webView.stopLoading()
+                webView.removeFromSuperview()
+            }
+            webViews.removeAll()
+        }
+
+        if wallpaper.type == .scene {
             // 1. Hardware-accelerated Metal Scene Rendering (1:1 MSL Effects Pipeline)
             for layer in playerLayers {
                 layer.player = nil
@@ -351,7 +404,12 @@ public final class DesktopEngine: NSObject, ObservableObject {
             skView.isPaused = true
         }
         for webView in webViews {
-            webView.evaluateJavaScript("if (window.onPause) window.onPause();", completionHandler: nil)
+            webView.evaluateJavaScript("""
+            if (window.wallpaperPropertyListener && window.wallpaperPropertyListener.setPaused) {
+                window.wallpaperPropertyListener.setPaused(true);
+            }
+            if (window.onPause) window.onPause();
+            """, completionHandler: nil)
         }
         isPlaying = false
     }
@@ -363,13 +421,27 @@ public final class DesktopEngine: NSObject, ObservableObject {
             skView.isPaused = false
         }
         for webView in webViews {
-            webView.evaluateJavaScript("if (window.onResume) window.onResume();", completionHandler: nil)
+            webView.evaluateJavaScript("""
+            if (window.wallpaperPropertyListener && window.wallpaperPropertyListener.setPaused) {
+                window.wallpaperPropertyListener.setPaused(false);
+            }
+            if (window.onResume) window.onResume();
+            """, completionHandler: nil)
         }
         isPlaying = true
     }
 
     public func stop() {
         pause()
+        if let m = mouseMonitor {
+            NSEvent.removeMonitor(m)
+            mouseMonitor = nil
+        }
+        for webView in webViews {
+            webView.stopLoading()
+            webView.removeFromSuperview()
+        }
+        webViews.removeAll()
         currentWallpaper = nil
         audioLooper = nil
         audioPlayer = nil

@@ -1,5 +1,6 @@
 import XCTest
 import SpriteKit
+import WebKit
 @testable import WallpaperCore
 
 final class WallpaperTests: XCTestCase {
@@ -226,6 +227,65 @@ final class WallpaperTests: XCTestCase {
             viewportSize: CGSize(width: 1920, height: 1080)
         )
         print("Successfully rendered scene 3786653815 in native BGRA format!")
+    }
+
+    @MainActor
+    func testWebWallpaperRhineLab() async throws {
+        let workshopPath = "/Users/a1-6/Library/Application Support/Steam/steamapps/workshop/content/431960/3799142774"
+        let dirURL = URL(fileURLWithPath: workshopPath)
+        guard FileManager.default.fileExists(atPath: dirURL.path) else { return }
+
+        let parser = WallpaperParser()
+        let item = try parser.parseDirectory(at: dirURL)
+        XCTAssertEqual(item.type, .web)
+        XCTAssertNotNil(item.htmlURL)
+        guard let htmlURL = item.htmlURL else { return }
+
+        let webConfig = WKWebViewConfiguration()
+        webConfig.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+        webConfig.setValue(true, forKey: "allowUniversalAccessFromFileURLs")
+
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), configuration: webConfig)
+        webView.loadFileURL(htmlURL, allowingReadAccessTo: dirURL)
+
+        // Wait a short bit for load
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+
+        // Check if window.wallpaperPropertyListener exists
+        let checkRes = try? await webView.evaluateJavaScript("typeof window.wallpaperPropertyListener")
+        print("Initial wallpaperPropertyListener type: \(String(describing: checkRes))")
+
+        // Parse project.json general.properties and inject
+        let projectJsonURL = dirURL.appendingPathComponent("project.json")
+        if let data = try? Data(contentsOf: projectJsonURL),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let general = obj["general"] as? [String: Any],
+           let properties = general["properties"] as? [String: Any] {
+            let jsonPropsData = try JSONSerialization.data(withJSONObject: properties)
+            let jsonPropsStr = String(data: jsonPropsData, encoding: .utf8)!
+
+            let applyScript = """
+            if (window.wallpaperPropertyListener && window.wallpaperPropertyListener.applyUserProperties) {
+                window.wallpaperPropertyListener.applyUserProperties(\(jsonPropsStr));
+                "applied";
+            } else {
+                "listener not ready";
+            }
+            """
+            let applyRes = try? await webView.evaluateJavaScript(applyScript)
+            print("applyUserProperties result: \(String(describing: applyRes))")
+        }
+
+        // Wait another 500ms and check host properties and canvas
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let hostRes = try? await webView.evaluateJavaScript("Object.keys(window.rhineWallpaperHost?.properties || {}).length")
+        print("rhineWallpaperHost properties count: \(String(describing: hostRes))")
+
+        let domRes = try? await webView.evaluateJavaScript("document.getElementById('stage')?.children.length || 0")
+        print("Stage children count: \(String(describing: domRes))")
+
+        let canvasRes = try? await webView.evaluateJavaScript("document.querySelector('canvas') !== null")
+        print("Canvas element created: \(String(describing: canvasRes))")
     }
 
     @MainActor
