@@ -1,136 +1,178 @@
-# Steam Wallpaper for Mac 🖥️✨
+<div align="center">
+  <img src="logo.png" width="96" alt="Steam Wallpaper for macOS Logo" />
+  <h1>Steam Wallpaper for macOS</h1>
+  <p><strong>High-Performance Native Wallpaper Engine for Apple Silicon & Intel Mac.</strong></p>
+  <p>Hardware-accelerated dynamic wallpaper runtime powered by Metal, WebKit, and AVFoundation. Zero Electron.</p>
 
-一个专为 macOS 打造的高性能、轻量级 Steam Wallpaper Engine 原生伴侣应用。纯 Swift 6 (SwiftUI + AppKit + SpriteKit + Metal + WebKit) 原生开发，旨在带来极低能耗、硬件加速、丝滑流畅的动态壁纸桌面体验。
+[![GitHub release](https://img.shields.io/github/v/release/yubinbin32-ops/steam-wallpaper-for-macos)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/yubinbin32-ops/steam-wallpaper-for-macos?style=flat)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/stargazers)
+[![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-brightgreen)](https://apple.com/macos)
+[![Swift 5.10+](https://img.shields.io/badge/Swift-5.10%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![Metal Acceleration](https://img.shields.io/badge/Render-Metal%20%7C%20WebKit%20%7C%20AVFoundation-blue)](https://developer.apple.com/metal/)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-![桌面运行效果与原生画廊](docs/images/desktop_preview.jpg)
+<p>Native Metal Pipeline · 1:1 WebKit Bridge · Hardware-Decoded 4K · ~50MB RAM Footprint</p>
 
----
-
-## ⚠️ 使用前必读（前提条件）
-
-为了能够通过 Steam 官方高速通道正常下载和使用创意工坊壁纸，请确保满足以下条件：
-
-1. **Steam 账户中已购买 Wallpaper Engine**：
-   - 因为 Steam 创意工坊下载 API 仅对已拥有该软件的账户开放下载权限。
-2. **下载壁纸时需要打开 Steam 客户端**：
-   - 应用通过与正在运行的 Steam 客户端进行本地通信来调度官方 CDN 下载，因此**在下载壁纸时，必须保持 Steam 客户端处于打开并登录状态**。
-3. **在创意工坊中复制链接即可**：
-   - 在 Steam 创意工坊页面右键复制壁纸链接（或复制网址栏链接、纯数字工坊 ID）。
-
----
-
-## 🎨 当前支持与兼容性说明
-
-本应用采用原生多媒体与图形管线开发，目前对不同类型的壁纸支持程度如下：
-
-| 壁纸类型 | 支持状态 | 说明 |
-| :--- | :---: | :--- |
-| **Video 视频壁纸** | **完美支持** | 采用 macOS 原生 `AVFoundation` + 硬件解码器，4K 60fps 极其流畅，CPU 占用率低于 0.5%，完全不发热。 |
-| **Web 网页壁纸** | **完美支持** | 基于 macOS 原生 `WebKit` (`WKWebView`)，完整支持 HTML5、Canvas、WebGL 与 CSS3 动画，支持系统休眠与全屏暂停。 |
-| **静态壁纸 (Static)** | **完美支持** | 提取超清原图，智能 Aspect Fill 居中裁切自适应屏幕比例，绝不拉伸变形。 |
-| **Scene 场景壁纸** | **部分支持** | 支持基础 2D 图层合成、SpriteKit 粒子特效（星空、流星、烟雨等）与原声音乐播放。由于部分复杂场景使用了 Windows 专用的 Puppet 2D 骨骼网格与 DirectX/HLSL 着色器，部分复杂人物场景可能存在对齐错位或着色差异，建议优先选用 Video 视频壁纸、Web 网页壁纸或经典粒子场景。 |
+[English](README.md) · [简体中文](README_zh.md) · [Download & Install](#download--installation) · [Compatibility](#wallpaper-compatibility-matrix) · [Core Features](#core-features) · [Architecture](#technical-architecture)
+</div>
 
 ---
 
-## 📥 下载安装（推荐）
+## Give your Mac desktop the native Wallpaper Engine it deserves
 
-通过 GitHub Actions 自动构建，每当发布新版本时会自动编译并打包发布至 Releases：
+![Desktop Preview](docs/images/desktop_preview.jpg)
 
-1. 前往 GitHub 仓库的 **Releases** 页面；
-2. 下载最新的 `SteamWallpaper-macOS.zip` 压缩包；
-3. 双击解压后将 `Wallpaper.app` 拖入 `/Applications`（访达应用程序）文件夹；
-4. 双击打开即可使用！
-   *(注：若首次打开提示“无法打开，因为无法验证开发者”，请前往系统设置 -> 隐私与安全性 -> 点击“仍要打开”即可。)*
+**Steam Wallpaper for macOS** is a lightweight, pure Swift companion application designed specifically to run Steam Wallpaper Engine wallpapers natively on macOS. Engineered directly upon Apple's graphics and multimedia frameworks (SwiftUI + AppKit + Metal + WebKit + AVFoundation), it delivers buttery-smooth 60fps+ desktop wallpapers with negligible battery drain and near-zero CPU usage.
+
+Say goodbye to sluggish web wrappers, bloated Electron runtimes, and overheating laptop fans. By integrating directly into macOS's lowest window level (`.desktopWindow`) with hardware acceleration, your favorite wallpapers run seamlessly in the background without disturbing your daily workflow.
 
 ---
 
-## 🌟 核心特性
+## Wallpaper Compatibility Matrix
 
-- **🚀 一键工坊直连下载**：
-  - 复制创意工坊链接或 ID 粘贴即可，系统自动调度本地 Steam 官方高速 CDN 下载，无需第三方代理或登录 Cookie。
-- **⚡ 极致轻量与硬件加速**：
-  - 拒绝臃肿的 Electron 与第三方 Chromium 内核；
-  - 基于 macOS 原生渲染管线，日常运行内存仅 50~80MB，笔记本待机电池续航不受影响。
-- **📐 智能比例自适应**：
-  - 严格保持画面原始高宽比（Aspect Fill），支持超宽屏、带鱼屏与各类 MacBook Retina 视网膜屏幕，画面居中裁剪，绝不拉伸挤压。
-- **🔋 智能能耗守护（PowerManager）**：
-  - 自动感知全屏应用（如全屏写代码、全屏看视频、玩游戏），全屏时自动挂起壁纸渲染，释放 100% GPU/CPU 算力；退出全屏平滑恢复。
-- **🎛️ 菜单栏常驻控制中心**：
-  - 顶部状态栏托盘提供一键静音、暂停/继续、快速切壁纸和快速呼出相册功能。
+With the latest architecture upgrade, **Steam Wallpaper for macOS** natively supports all four primary Wallpaper Engine formats:
+
+| Wallpaper Format | Support Status | Rendering Pipeline | Technical Highlights |
+| :--- | :---: | :--- | :--- |
+| **Scene (`.pkg` / 2D)** | **Perfect Support** | Native Metal (`MetalScenePipeline`) + SpriteKit | Native PKG unpacking, pure Swift LZ4 block decompressor, TEX texture decoding, multi-layer 2D sprite composition, dynamic particle simulation (rain, stars, smoke, glow), and synchronized audio playback. |
+| **Web (`HTML5` / `WebGL`)** | **Perfect Support** | Native WebKit (`WKWebView`) + `WebWallpaperBridge` | 1:1 Wallpaper Engine JavaScript API bridge (`window.wallpaperPropertyListener`), Canvas & WebGL 3D rendering, CSS3 animations, local sandbox access, and automatic audio mute/lifecycle control. |
+| **Video (`MP4` / `WebM`)** | **Perfect Support** | Native `AVFoundation` + Hardware VideoToolbox | 4K 60fps ultra-smooth playback, zero-stutter seamless looping (`AVPlayerLooper`), hardware decoding, <0.5% CPU overhead, and completely cool operation. |
+| **Image (`Static`)** | **Perfect Support** | Native `AppKit` / `CoreGraphics` | Ultra-high-resolution texture extraction, intelligent Aspect Fill center cropping, zero aspect ratio distortion across Retina MacBook screens and ultrawide monitors. |
 
 ---
 
-## 📖 使用方法
+## Prerequisites
 
-1. **下载时请确保已打开 Steam 客户端**：
-   - **下载壁纸时必须保持 Steam 客户端处于打开并登录状态**（在后台运行即可），以便应用通过 Steam 官方通道拉取工坊资源。
-2. **在创意工坊复制壁纸链接**：
-   - 在 Steam 社区创意工坊的 Wallpaper Engine 分区中找到喜欢的壁纸；
-   - 右键选择“复制网页链接”（例如：`https://steamcommunity.com/sharedfiles/filedetails/?id=2945179021`）或直接复制纯数字 ID。
+To download wallpapers directly via Steam's official high-speed CDN without credentials or third-party proxies, please ensure:
 
-   ![复制 Steam 创意工坊链接示例](docs/images/workshop_link_demo.png)
-3. **一键下载并应用**：
-   - 打开 **Steam Wallpaper for Mac**；
-   - 在主界面顶部的下载栏粘贴链接，点击 **“下载并提取”**；
-   - 下载完成后会自动解析并立即应用为当前桌面壁纸！
-4. **壁纸库管理**：
-   - 之前下载过的壁纸会自动保留在本地画廊中；
-   - 点击壁纸卡片上的 **“应用”** 按钮即可一键无缝切换桌面；
-   - 点击文件夹图标可直接在访达（Finder）中定位源文件。
+1. **Wallpaper Engine purchased on your Steam account**:
+   - The official Steam Workshop download API requires account ownership of Wallpaper Engine to authorize downloads.
+2. **Keep the Steam client running during downloads**:
+   - The app communicates with your local running Steam client via native IPC to trigger downloads directly from Steam's official servers. **Keep Steam running and logged in while downloading wallpapers**.
+3. **Copy the Workshop link**:
+   - Simply copy any Wallpaper Engine Workshop URL or numeric item ID directly from Steam or your browser.
 
 ---
 
-## 🛠️ 构建与开发
+## Download & Installation
 
-### 环境要求
-- macOS 13.0 (Ventura) 及以上版本
-- Xcode 15+ 或 Swift 6.0+ 工具链
+Every release is automatically compiled, packaged, and verified via GitHub Actions:
 
-### 本地构建与打包
+1. Go to the [**Releases**](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases) page.
+2. Download the latest `SteamWallpaper-macOS.zip` archive.
+3. Unzip the file and drag `Wallpaper.app` into your `/Applications` folder.
+4. Double-click to launch!
+
+> [!NOTE]
+> *If macOS displays a warning stating "cannot be opened because the developer cannot be verified", open **System Settings** -> **Privacy & Security** -> scroll down to the Security section and click **"Open Anyway"**.*
+
+---
+
+## How the Engine Works
+
+```text
+Steam Workshop (URL / Item ID)
+          │
+          ▼
+Steam Client IPC (Official High-Speed CDN Channel)
+          │
+          ▼
+WallpaperCore (Parser & Decompressor)
+    ├─ Scene (.pkg / scene.json) ──► MetalScenePipeline (Metal 2D + LZ4 + Particles)
+    ├─ Web (index.html)          ──► WKWebView + WebWallpaperBridge (1:1 JS APIs)
+    ├─ Video (.mp4 / .webm)      ──► AVPlayerLooper (Hardware VideoToolbox)
+    └─ Static (TEX / Images)     ──► CoreGraphics (Smart Aspect Fill)
+          │
+          ▼
+Desktop Layer (.desktopWindow) + PowerManager (Full-screen Auto Pause)
+```
+
+---
+
+## Core Features
+
+- **One-Click Workshop Direct Download**:
+  - Simply paste a Steam Workshop link or item ID. The app delegates the download to the local Steam client via official CDN routes. No third-party proxies, API tokens, or login cookies needed.
+- **Extreme Efficiency & Hardware Acceleration**:
+  - Zero Electron or third-party Chromium binaries. Built with Apple's native rendering pipeline, maintaining an idle memory footprint of only **50~80MB RAM** and zero thermal throttling.
+- **Intelligent Power Guardian (`PowerManager`)**:
+  - Automatically senses full-screen applications (e.g., Xcode, VS Code, full-screen video, games). Instantly pauses wallpaper rendering to release 100% GPU/CPU power; seamlessly resumes when exiting full-screen.
+- **Smart Aspect Ratio Adaptation**:
+  - Strictly preserves original image proportions using Aspect Fill. Tailored for 16:10 MacBook Retina displays, 16:9 monitors, and 21:9 / 32:9 ultrawide screens without stretching or distortion.
+- **Resident Menu Bar Controller (`StatusBarController`)**:
+  - Quick-access status bar icon provides instant controls: one-click mute, pause/resume, cycle wallpapers, and open the wallpaper gallery.
+
+---
+
+## Quick Start Guide
+
+1. **Keep Steam Running**:
+   - Ensure the Steam desktop client is launched and logged in in the background.
+2. **Copy a Workshop Link**:
+   - Browse the Wallpaper Engine Workshop on Steam, right-click any wallpaper and choose **"Copy Page URL"** (e.g., `https://steamcommunity.com/sharedfiles/filedetails/?id=2945179021`), or copy the item ID.
+   
+   ![Copy Steam Workshop Link Example](docs/images/workshop_link_demo.png)
+
+3. **Paste & Download**:
+   - In **Steam Wallpaper for macOS**, paste the URL into the top search bar and click **"Download & Extract"**.
+   - The app will automatically download, unpack, and set it as your live desktop wallpaper!
+4. **Manage Your Library**:
+   - Downloaded wallpapers are stored in your local gallery.
+   - Click **"Apply"** on any wallpaper card to switch instantly.
+   - Click the folder icon to reveal the wallpaper files directly in Finder.
+
+---
+
+## Building & Development
+
+### Requirements
+- macOS 14.0 (Sonoma) or later
+- Xcode 15+ / Swift 5.10+ toolchain
+
+### Local Compilation & Packaging
 
 ```bash
-# 1. 运行快速启动脚本
+# 1. Run quick start script
 ./run.sh
 
-# 2. 或者使用 Swift Package Manager 编译 Release 版本
+# 2. Or build release binary using Swift Package Manager
 swift build -c release
 
-# 3. 打包生成 Wallpaper.app 应用程序包（加 --zip 可同时生成安装 zip）
+# 3. Package into Wallpaper.app (add --zip to create a release zip)
 ./bundle.sh --zip
 ```
 
-### 自动化 Release 发布（GitHub Actions）
-- 项目配置了自动化 CI/CD 流水线 ([.github/workflows/release.yml](.github/workflows/release.yml))。
-- **自动触发**：推送版本标签（例如 `git tag v1.0.0 && git push origin v1.0.0`）；
-- **手动触发**：在 GitHub 仓库页面的 Actions -> "Release Steam Wallpaper for Mac" -> 点击 "Run workflow"；
-- 工作流会在 macOS 虚拟环境中自动完成代码检出、单元测试、打包签名，并自动将生成的 `SteamWallpaper-macOS.zip` 挂载至 Releases 供用户下载安装。
 
 ---
 
-## 🧱 技术架构
+## Technical Architecture
 
 ```text
 Sources/
-├── WallpaperCore/                 # 底层跨模块核心库
-│   ├── Models.swift               # 壁纸元数据、类型定义与下载状态模型
-│   ├── SteamWorkshopService.swift # Steam 创意工坊链接解析与元数据请求
-│   ├── SteamDownloader.swift      # Steam 客户端指令桥接与下载监控
-│   ├── WallpaperParser.swift      # project.json 与 scene.pkg 二进制解包引擎
-│   ├── SceneRenderer.swift        # SpriteKit + Metal 场景与粒子特效渲染器
-│   ├── DesktopEngine.swift        # NSWindow 桌面置底层级、AVPlayer、SpriteKit 与 WebKit 控制
-│   ├── PowerManager.swift         # 全屏应用监听与自适应低能耗调度
-│   └── WallpaperStore.swift       # 响应式状态管理与本地壁纸库同步
-└── WallpaperApp/                  # SwiftUI 原生前端应用
-    ├── AppEntry.swift             # App 主入口与生命周期托管
-    ├── StatusBarController.swift     # 状态栏菜单常驻控制器
+├── WallpaperCore/                 # Core Foundation & Engine Pipelines
+│   ├── Models.swift               # Wallpaper metadata, types, and download models
+│   ├── SteamWorkshopService.swift # Workshop URL parsing & metadata fetching
+│   ├── SteamDownloader.swift      # Local Steam client IPC bridge & download monitor
+│   ├── WallpaperParser.swift      # project.json & scene.pkg binary unpacker
+│   ├── MetalScenePipeline.swift   # Metal 2D rendering, LZ4 decompressor & shader pipeline
+│   ├── SceneRenderer.swift        # SpriteKit + Metal particle & scene compositor
+│   ├── WebWallpaperBridge.swift   # Official Wallpaper Engine JS API bridge & sandbox handler
+│   ├── DesktopEngine.swift        # Desktop-level NSWindow, AVPlayer, Metal & WebKit controller
+│   ├── PowerManager.swift         # Full-screen app detection & low-power sleep manager
+│   └── WallpaperStore.swift       # Reactive state management & local gallery sync
+└── WallpaperApp/                  # Native SwiftUI Frontend Application
+    ├── AppEntry.swift             # Application entry point & lifecycle management
+    ├── StatusBarController.swift  # Resident menu bar tray controller
     └── Views/
-        ├── GalleryView.swift      # 壁纸画廊相册主界面
-        ├── WallpaperCardView.swift    # 响应式壁纸卡片组件
-        └── DownloadBarView.swift      # 创意工坊链接下载栏
+        ├── GalleryView.swift      # Wallpaper gallery grid UI
+        ├── WallpaperCardView.swift# Interactive wallpaper card component
+        └── DownloadBarView.swift  # Workshop URL input & download trigger bar
 ```
 
 ---
 
-## 📄 开源许可
+## License & Disclaimer
 
-本项目遵循 MIT 许可证开源。所有在 Steam 创意工坊下载的壁纸版权归其原作者所有。
+- Distributed under the **MIT License**. See [LICENSE](LICENSE) for more details.
+- All wallpapers downloaded from the Steam Workshop remain the copyright of their respective creators.
+- Steam and Wallpaper Engine are registered trademarks of Valve Corporation and Wallpaper Engine GmbH. This project is an independent open-source tool and is not affiliated with Valve or Wallpaper Engine.
