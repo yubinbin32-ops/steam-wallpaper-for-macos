@@ -113,6 +113,121 @@ final class WallpaperTests: XCTestCase {
         print("高槻泉 Scene verified: \(sprites.count) sprite(s), \(emitters.count) particle emitter(s)")
     }
 
+    func testMetalTexDecoderOnRealWorkshop() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else { return }
+        let workshopPath = "/Users/a1-6/Library/Application Support/Steam/steamapps/workshop/content/431960/3659880761"
+        let pkgURL = URL(fileURLWithPath: workshopPath).appendingPathComponent("scene.pkg")
+        guard FileManager.default.fileExists(atPath: pkgURL.path),
+              let parser = ScenePKGParser(url: pkgURL) else { return }
+
+        // Test RG88 LZ4 Mask decoding
+        for maskName in ["materials/masks/shake_mask_4c8aa070.tex", "materials/masks/shake_mask_5e2a2127.tex", "materials/masks/shake_mask_54525ae6.tex"] {
+            if let maskData = parser.extractFile(named: maskName) {
+                let tex = MetalTextureDecoder.shared.decode(data: maskData, device: device)
+                XCTAssertNotNil(tex, "Should decode \(maskName)")
+                
+                // Read back bytes and find where non-neutral pixels are
+                let w = tex!.width, h = tex!.height
+                var raw = [UInt8](repeating: 0, count: w * h * 2)
+                tex!.getBytes(&raw, bytesPerRow: w * 2, from: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0)
+                var count = 0
+                var minX = w, maxX = 0, minY = h, maxY = 0
+                var maxRDiff = 0, maxGDiff = 0
+                for y in 0..<h {
+                    for x in 0..<w {
+                        let idx = (y * w + x) * 2
+                        let r = Int(raw[idx]), g = Int(raw[idx+1])
+                        let rDiff = abs(r - 127), gDiff = abs(g - 127)
+                        maxRDiff = max(maxRDiff, rDiff)
+                        maxGDiff = max(maxGDiff, gDiff)
+                        if rDiff > 3 || gDiff > 3 {
+                            count += 1
+                            minX = min(minX, x); maxX = max(maxX, x)
+                            minY = min(minY, y); maxY = max(maxY, y)
+                        }
+                    }
+                }
+                print("Mask \(maskName): active=\(count), X=[\(minX)..\(maxX)], Y=[\(minY)..\(maxY)] maxRDiff=\(maxRDiff), maxGDiff=\(maxGDiff)")
+            }
+        }
+
+        // Test Embedded PNG texture decoding
+        if let rippleData = parser.extractFile(named: "materials/effects/waterripplenormal.tex") {
+            let tex = MetalTextureDecoder.shared.decode(data: rippleData, device: device)
+            XCTAssertNotNil(tex, "Should decode ripple normal tex")
+            print("Successfully decoded ripple normal texture: \(tex!.width)x\(tex!.height)")
+        }
+    }
+
+    @MainActor
+    func testMetalSceneEngineLoadSceneYachiyo() throws {
+        let workshopPath = "/Users/a1-6/Library/Application Support/Steam/steamapps/workshop/content/431960/3659880761"
+        let url = URL(fileURLWithPath: workshopPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+
+        let success = MetalSceneEngine.shared.loadScene(from: url)
+        XCTAssertTrue(success, "MetalSceneEngine should load scene successfully")
+        XCTAssertEqual(MetalSceneEngine.shared.canvasSize.width, 3840)
+        XCTAssertEqual(MetalSceneEngine.shared.canvasSize.height, 2160)
+        XCTAssertGreaterThanOrEqual(MetalSceneEngine.shared.layers.count, 1)
+        XCTAssertGreaterThanOrEqual(MetalSceneEngine.shared.particleSystems.count, 1, "Should load GPU instanced particle systems")
+
+        let layer = MetalSceneEngine.shared.layers.first
+        XCTAssertNotNil(layer)
+        XCTAssertEqual(layer?.passes.count, 5, "Layer should have 5 effects passes (waterripple, shake, iris, shake, shake)")
+        print("MetalSceneEngine loaded successfully: \(MetalSceneEngine.shared.layers.count) layer(s), \(MetalSceneEngine.shared.particleSystems.count) particle system(s), layer has \(layer?.passes.count ?? 0) effect pass(es)!")
+
+        // Test rendering a frame with both effects and particles
+        guard let dev = MTLCreateSystemDefaultDevice() else { return }
+        let outDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: 1920, height: 1080, mipmapped: false)
+        outDesc.usage = [.renderTarget, .shaderRead]
+        guard let outTex = dev.makeTexture(descriptor: outDesc) else { return }
+
+        let rpd = MTLRenderPassDescriptor()
+        rpd.colorAttachments[0].texture = outTex
+        rpd.colorAttachments[0].loadAction = .clear
+        rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
+        rpd.colorAttachments[0].storeAction = .store
+
+        MetalSceneEngine.shared.render(
+            to: outTex,
+            renderPassDescriptor: rpd,
+            time: 1.5,
+            viewportSize: CGSize(width: 1920, height: 1080)
+        )
+        print("Successfully rendered a complete Metal Scene frame with all 5 passes and GPU particles!")
+    }
+
+    @MainActor
+    func testMetalSceneEngineLoadScene3786653815() throws {
+        let workshopPath = "/Users/a1-6/Library/Application Support/Steam/steamapps/workshop/content/431960/3786653815"
+        let url = URL(fileURLWithPath: workshopPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+
+        let success = MetalSceneEngine.shared.loadScene(from: url)
+        XCTAssertTrue(success, "MetalSceneEngine should load scene 3786653815 successfully from scene.pkg")
+        XCTAssertGreaterThanOrEqual(MetalSceneEngine.shared.layers.count, 1)
+
+        guard let dev = MTLCreateSystemDefaultDevice() else { return }
+        let outDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: 1920, height: 1080, mipmapped: false)
+        outDesc.usage = [.renderTarget, .shaderRead]
+        guard let outTex = dev.makeTexture(descriptor: outDesc) else { return }
+
+        let rpd = MTLRenderPassDescriptor()
+        rpd.colorAttachments[0].texture = outTex
+        rpd.colorAttachments[0].loadAction = .clear
+        rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
+        rpd.colorAttachments[0].storeAction = .store
+
+        MetalSceneEngine.shared.render(
+            to: outTex,
+            renderPassDescriptor: rpd,
+            time: 2.0,
+            viewportSize: CGSize(width: 1920, height: 1080)
+        )
+        print("Successfully rendered scene 3786653815 in native BGRA format!")
+    }
+
     @MainActor
     private func allDescendants(of node: SKNode) -> [SKNode] {
         var results = node.children

@@ -69,6 +69,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
 
     private var imageViews: [AspectFillView] = []
     private var skViews: [SKView] = []
+    private var metalViews: [MetalSceneView] = []
     private var webViews: [WKWebView] = []
 
     public override init() {
@@ -88,6 +89,11 @@ public final class DesktopEngine: NSObject, ObservableObject {
             skView.presentScene(nil)
         }
         skViews.removeAll()
+        for mView in metalViews {
+            mView.isPaused = true
+            mView.removeFromSuperview()
+        }
+        metalViews.removeAll()
         for webView in webViews {
             webView.stopLoading()
             webView.removeFromSuperview()
@@ -125,7 +131,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
         contentView.addSubview(imageView)
         imageViews.append(imageView)
 
-        // 2. SpriteKit SKView for real-time Scene rendering
+        // 2. SpriteKit SKView for real-time Scene fallback
         let skView = SKView(frame: contentView.bounds)
         skView.autoresizingMask = [.width, .height]
         skView.ignoresSiblingOrder = true
@@ -135,7 +141,14 @@ public final class DesktopEngine: NSObject, ObservableObject {
         contentView.addSubview(skView)
         skViews.append(skView)
 
-        // 3. AVPlayerLayer for native 60fps hardware-accelerated video
+        // 3. MetalSceneView for hardware-accelerated authentic Scene rendering (1:1 MSL Effects)
+        let metalView = MetalSceneView(frame: contentView.bounds)
+        metalView.autoresizingMask = [.width, .height]
+        metalView.isHidden = true
+        contentView.addSubview(metalView)
+        metalViews.append(metalView)
+
+        // 4. AVPlayerLayer for native 60fps hardware-accelerated video
         let playerLayer = AVPlayerLayer()
         playerLayer.frame = contentView.bounds
         playerLayer.videoGravity = .resizeAspectFill
@@ -144,7 +157,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
         contentView.layer?.addSublayer(playerLayer)
         playerLayers.append(playerLayer)
 
-        // 4. WKWebView for Web / HTML5 Wallpapers
+        // 5. WKWebView for Web / HTML5 Wallpapers
         let webConfig = WKWebViewConfiguration()
         webConfig.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
         webConfig.mediaTypesRequiringUserActionForPlayback = []
@@ -192,6 +205,10 @@ public final class DesktopEngine: NSObject, ObservableObject {
                 skView.isHidden = true
                 skView.presentScene(nil)
             }
+            for mView in metalViews {
+                mView.isPaused = true
+                mView.isHidden = true
+            }
             for imgView in imageViews {
                 imgView.isHidden = true
             }
@@ -203,7 +220,7 @@ public final class DesktopEngine: NSObject, ObservableObject {
             self.isPlaying = true
 
         } else if wallpaper.type == .scene {
-            // Real-time SpriteKit Scene Rendering
+            // 1. Hardware-accelerated Metal Scene Rendering (1:1 MSL Effects Pipeline)
             for layer in playerLayers {
                 layer.player = nil
                 layer.isHidden = true
@@ -212,22 +229,39 @@ public final class DesktopEngine: NSObject, ObservableObject {
                 imgView.isHidden = true
             }
 
-            var sceneLoaded = false
-            for skView in skViews {
-                if let scene = SceneRenderer.shared.buildScene(for: wallpaper.localDirectoryURL) {
-                    skView.presentScene(scene)
-                    skView.isPaused = false
-                    skView.isHidden = false
-                    sceneLoaded = true
+            let metalLoaded = MetalSceneEngine.shared.loadScene(from: wallpaper.localDirectoryURL)
+            if metalLoaded {
+                for skView in skViews {
+                    skView.isPaused = true
+                    skView.isHidden = true
+                    skView.presentScene(nil)
                 }
-            }
+                for mView in metalViews {
+                    mView.isPaused = false
+                    mView.isHidden = false
+                }
+            } else {
+                for mView in metalViews {
+                    mView.isPaused = true
+                    mView.isHidden = true
+                }
+                var sceneLoaded = false
+                for skView in skViews {
+                    if let scene = SceneRenderer.shared.buildScene(for: wallpaper.localDirectoryURL) {
+                        skView.presentScene(scene)
+                        skView.isPaused = false
+                        skView.isHidden = false
+                        sceneLoaded = true
+                    }
+                }
 
-            if !sceneLoaded {
-                // Fallback to static image if scene parsing failed
-                if let previewURL = wallpaper.previewURL, let image = NSImage(contentsOf: previewURL) {
-                    for imgView in imageViews {
-                        imgView.image = image
-                        imgView.isHidden = false
+                if !sceneLoaded {
+                    // Fallback to static image if scene parsing failed
+                    if let previewURL = wallpaper.previewURL, let image = NSImage(contentsOf: previewURL) {
+                        for imgView in imageViews {
+                            imgView.image = image
+                            imgView.isHidden = false
+                        }
                     }
                 }
             }
@@ -242,6 +276,10 @@ public final class DesktopEngine: NSObject, ObservableObject {
                 skView.isPaused = true
                 skView.isHidden = true
                 skView.presentScene(nil)
+            }
+            for mView in metalViews {
+                mView.isPaused = true
+                mView.isHidden = true
             }
             for imgView in imageViews {
                 imgView.isHidden = true
@@ -272,6 +310,10 @@ public final class DesktopEngine: NSObject, ObservableObject {
                 skView.isPaused = true
                 skView.isHidden = true
                 skView.presentScene(nil)
+            }
+            for mView in metalViews {
+                mView.isPaused = true
+                mView.isHidden = true
             }
             for layer in playerLayers {
                 layer.player = nil
