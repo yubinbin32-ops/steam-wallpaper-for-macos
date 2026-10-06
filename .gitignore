@@ -9,3 +9,6 @@ extracted_test/
 .Trashes
 *.zip
 *.sha256
+.cursor/
+.agents/
+opencode.json
