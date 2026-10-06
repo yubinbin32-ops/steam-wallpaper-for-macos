@@ -4,8 +4,8 @@
   <p><strong>专为 Apple Silicon 与 Intel Mac 打造的高性能原生 Wallpaper Engine 伴侣应用。</strong></p>
   <p>纯 Swift 原生开发 · Metal + WebKit + AVFoundation 硬件加速 · 告别臃肿 Electron</p>
 
-[![GitHub release](https://img.shields.io/github/v/release/yubinbin32-ops/steam-wallpaper-for-macos)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases/latest)
-[![GitHub stars](https://img.shields.io/github/stars/yubinbin32-ops/steam-wallpaper-for-macos?style=flat)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/yubinbin32-ops/wallpaper-for-macos)](https://github.com/yubinbin32-ops/wallpaper-for-macos/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/yubinbin32-ops/wallpaper-for-macos?style=flat)](https://github.com/yubinbin32-ops/wallpaper-for-macos/stargazers)
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-brightgreen)](https://apple.com/macos)
 [![Swift 5.10+](https://img.shields.io/badge/Swift-5.10%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Metal Acceleration](https://img.shields.io/badge/Render-Metal%20%7C%20WebKit%20%7C%20AVFoundation-blue)](https://developer.apple.com/metal/)
@@ -58,7 +58,7 @@
 
 通过 GitHub Actions 自动构建，每当发布新版本时会自动编译并打包发布至 Releases：
 
-1. 前往 GitHub 仓库的 [**Releases**](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases) 页面；
+1. 前往 GitHub 仓库的 [**Releases**](https://github.com/yubinbin32-ops/wallpaper-for-macos/releases) 页面；
 2. 下载最新的 `SteamWallpaper-macOS.zip` 压缩包；
 3. 双击解压后将 `Wallpaper.app` 拖入 `/Applications`（访达应用程序）文件夹；
 4. 双击打开即可使用！

@@ -4,8 +4,8 @@
   <p><strong>High-Performance Native Wallpaper Engine for Apple Silicon & Intel Mac.</strong></p>
   <p>Hardware-accelerated dynamic wallpaper runtime powered by Metal, WebKit, and AVFoundation. Zero Electron.</p>
 
-[![GitHub release](https://img.shields.io/github/v/release/yubinbin32-ops/steam-wallpaper-for-macos)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases/latest)
-[![GitHub stars](https://img.shields.io/github/stars/yubinbin32-ops/steam-wallpaper-for-macos?style=flat)](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/yubinbin32-ops/wallpaper-for-macos)](https://github.com/yubinbin32-ops/wallpaper-for-macos/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/yubinbin32-ops/wallpaper-for-macos?style=flat)](https://github.com/yubinbin32-ops/wallpaper-for-macos/stargazers)
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-brightgreen)](https://apple.com/macos)
 [![Swift 5.10+](https://img.shields.io/badge/Swift-5.10%2B-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Metal Acceleration](https://img.shields.io/badge/Render-Metal%20%7C%20WebKit%20%7C%20AVFoundation-blue)](https://developer.apple.com/metal/)
@@ -58,7 +58,7 @@ To download wallpapers directly via Steam's official high-speed CDN without cred
 
 Every release is automatically compiled, packaged, and verified via GitHub Actions:
 
-1. Go to the [**Releases**](https://github.com/yubinbin32-ops/steam-wallpaper-for-macos/releases) page.
+1. Go to the [**Releases**](https://github.com/yubinbin32-ops/wallpaper-for-macos/releases) page.
 2. Download the latest `SteamWallpaper-macOS.zip` archive.
 3. Unzip the file and drag `Wallpaper.app` into your `/Applications` folder.
 4. Double-click to launch!
